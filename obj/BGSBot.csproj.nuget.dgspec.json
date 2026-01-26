@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\Matt\\OneDrive\\Discord\\BGSBot\\BGSBot.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\Matt\\OneDrive\\Discord\\BGSBot\\BGSBot.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\Matt\\OneDrive\\Discord\\BGSBot\\BGSBot.csproj",
+        "projectName": "BGSBot",
+        "projectPath": "C:\\Users\\Matt\\OneDrive\\Discord\\BGSBot\\BGSBot.csproj",
+        "packagesPath": "C:\\Users\\Matt\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Matt\\OneDrive\\Discord\\BGSBot\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\Matt\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Discord.Net": {
+              "target": "Package",
+              "version": "[3.18.0, )"
+            },
+            "Discord.Net.Core": {
+              "target": "Package",
+              "version": "[3.18.0, )"
+            },
+            "Ionic.Zlib": {
+              "target": "Package",
+              "version": "[1.9.1.5, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[8.0.22, )"
+            },
+            "Microsoft.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[10.0.1, )"
+            },
+            "NetMQ": {
+              "target": "Package",
+              "version": "[4.0.2.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "c:\\program files\\dotnet\\sdk\\9.0.307/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
