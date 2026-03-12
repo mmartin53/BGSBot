@@ -49,15 +49,15 @@ namespace BGSBot
                 MessageCacheSize = 100,
                 GatewayIntents = GatewayIntents.AllUnprivileged
             };
-            return new ServiceCollection()
-                .AddSingleton(new DiscordSocketClient(config))
-                .AddSingleton<CommandService>()
-                .AddSingleton<DiscordService>()
-                .AddSingleton<EDDNDeserializer>()
-                .AddSingleton<DatabaseService>()
-                .AddSingleton<FactionAutocompleteProvider>()
-                .AddSingleton(provider => new InteractionService(provider.GetRequiredService<DiscordSocketClient>()))
-                .BuildServiceProvider();
+            return new ServiceCollection().AddSingleton(new DiscordSocketClient(config))
+                                          .AddSingleton<CommandService>()
+                                          .AddSingleton<DiscordService>()
+                                          .AddSingleton<EDDNDeserializer>()
+                                          .AddSingleton<DatabaseService>()
+                                          .AddSingleton<AutocompleteHandler, FactionAutocomplete>()
+                                          .AddSingleton<AutocompleteHandler, SystemAutoComplete>()
+                                          .AddSingleton(provider => new InteractionService(provider.GetRequiredService<DiscordSocketClient>()))
+                                          .BuildServiceProvider();
         }
     }
 }

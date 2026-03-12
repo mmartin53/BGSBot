@@ -88,3 +88,4 @@ C:\Users\Matt\OneDrive\Discord\BGSBot\bin\Debug\net8.0\runtimes\win-arm\native\e
 C:\Users\Matt\OneDrive\Discord\BGSBot\bin\Debug\net8.0\runtimes\win-arm64\native\e_sqlite3.dll
 C:\Users\Matt\OneDrive\Discord\BGSBot\bin\Debug\net8.0\runtimes\win-x64\native\e_sqlite3.dll
 C:\Users\Matt\OneDrive\Discord\BGSBot\bin\Debug\net8.0\runtimes\win-x86\native\e_sqlite3.dll
+C:\Users\Matt\OneDrive\Discord\BGSBot\obj\Debug\net8.0\BGSBot.sourcelink.json

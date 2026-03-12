@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
-using BGSBot.Services;
+﻿using BGSBot.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BGSBot.Database
 {
@@ -23,117 +23,165 @@ namespace BGSBot.Database
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Faction>()
-                .Property(x => x.ActiveStates)
-                .HasConversion(
-                    x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
-                    x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null)
-                )
-                .HasColumnType("TEXT");
-            modelBuilder.Entity<ActiveFaction>()
-                .Property(x => x.ActiveStates)
-                .HasConversion(
-                    x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
-                    x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null)
-                )
-                .HasColumnType("TEXT");
-            modelBuilder.Entity<Guild>()
-                .Property(x => x.Systems)
-                .HasConversion(
-                    x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
-                    x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null) ?? Array.Empty<string>()
-                )
-                .HasColumnType("TEXT");
+            modelBuilder.Entity<Faction>().Property(x => x.ActiveStates)
+                                          .HasConversion(
+                                              x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
+                                              x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null)
+                                          )
+                                          .HasColumnType("TEXT");
+
+            modelBuilder.Entity<ActiveFaction>().Property(x => x.ActiveStates)
+                                                .HasConversion(
+                                                    x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
+                                                    x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null)
+                                                )
+                                                .HasColumnType("TEXT");
+
+            modelBuilder.Entity<Faction>().Property(x => x.PendingStates)
+                                          .HasConversion(
+                                              x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
+                                              x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null)
+                                          )
+                                          .HasColumnType("TEXT");
+
+            modelBuilder.Entity<ActiveFaction>().Property(x => x.PendingStates)
+                                                .HasConversion(
+                                                    x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
+                                                    x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null)
+                                                )
+                                                .HasColumnType("TEXT");
+
+            modelBuilder.Entity<Guild>().Property(x => x.Systems)
+                                        .HasConversion(
+                                            x => JsonSerializer.Serialize(x, (JsonSerializerOptions?)null),
+                                            x => JsonSerializer.Deserialize<string[]>(x, (JsonSerializerOptions?)null) ?? Array.Empty<string>()
+                                        )
+                                        .HasColumnType("TEXT");
 
 
-            modelBuilder.Entity<EDSystem>()
-                .HasMany(x => x.Factions)
-                .WithOne(x => x.SystemID)
-                .HasForeignKey(x => x.JournalMessageID)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<ActiveEDSystem>()
-                .HasMany(x => x.Factions)
-                .WithOne(x => x.SystemID)
-                .HasForeignKey(x => x.JournalMessageID)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<EDSystem>().HasMany(x => x.Factions)
+                                           .WithOne(x => x.System)
+                                           .HasForeignKey(x => x.SystemFK)
+                                           .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<EDSystem>()
-                .HasMany(x => x.Conflicts)
-                .WithOne(x => x.SystemID)
-                .HasForeignKey(x => x.JournalMessageID)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<ActiveEDSystem>()
-                .HasMany(x => x.Conflicts)
-                .WithOne(x => x.SystemID)
-                .HasForeignKey(x => x.JournalMessageID)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ActiveEDSystem>().HasMany(x => x.Factions)
+                                                 .WithOne(x => x.System)
+                                                 .HasForeignKey(x => x.SystemFK)
+                                                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<EDSystem>().HasMany(x => x.Conflicts)
+                                           .WithOne(x => x.SystemID)
+                                           .HasForeignKey(x => x.JournalMessageID)
+                                           .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ActiveEDSystem>().HasMany(x => x.Conflicts)
+                                                 .WithOne(x => x.SystemID)
+                                                 .HasForeignKey(x => x.JournalMessageID)
+                                                 .OnDelete(DeleteBehavior.Cascade);
 
 
-            modelBuilder.Entity<Conflict>()
-                .HasOne(x => x.Faction1)
-                .WithMany()
-                .HasForeignKey(x => x.Faction1ID)
-                .OnDelete(DeleteBehavior.Restrict);
-            modelBuilder.Entity<Conflict>()
-                .HasOne(x => x.Faction2)
-                .WithMany()
-                .HasForeignKey(x => x.Faction2ID)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Conflict>().HasOne(x => x.Faction1)
+                                           .WithMany()
+                                           .HasForeignKey(x => x.Faction1ID)
+                                           .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<ActiveConflict>()
-                .HasOne(x => x.Faction1)
-                .WithMany()
-                .HasForeignKey(x => x.Faction1ID)
-                .OnDelete(DeleteBehavior.Restrict);
-            modelBuilder.Entity<ActiveConflict>()
-                .HasOne(x => x.Faction2)
-                .WithMany()
-                .HasForeignKey(x => x.Faction2ID)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Conflict>().HasOne(x => x.Faction2)
+                                           .WithMany()
+                                           .HasForeignKey(x => x.Faction2ID)
+                                           .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ActiveConflict>().HasOne(x => x.Faction1)
+                                                 .WithMany()
+                                                 .HasForeignKey(x => x.Faction1ID)
+                                                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ActiveConflict>().HasOne(x => x.Faction2)
+                                                 .WithMany()
+                                                 .HasForeignKey(x => x.Faction2ID)
+                                                 .OnDelete(DeleteBehavior.Restrict);
         }
 
-
-        public void AddSystem(EDDNDeserializer.Root json)
+        public void AddSystem(EDDNDeserializer.Root json, Action<ActiveEDSystem, Guild, EDSystem> responder)
         {
             var system = new EDSystem
             {
                 StarSystem = json.Message.StarSystem,
-                Timestamp = json.Message.timestamp
+                Timestamp = json.Message.timestamp,
+                X = json.Message.StarPos[0],
+                Y = json.Message.StarPos[1],
+                Z = json.Message.StarPos[2]
             };
-            var existingEntry = EDSystems.FirstOrDefault(x => x.StarSystem == json.Message.StarSystem);
+            var existingEntry = EDSystems.Include(x => x.Factions)   
+                                         .Include(x => x.Conflicts) 
+                                         .FirstOrDefault(x => x.StarSystem == json.Message.StarSystem);
             if (existingEntry != null)
             {
                 if (DateTime.Compare(existingEntry.Timestamp, system.Timestamp) >= 0) return;
-                EDSystems.RemoveRange(existingEntry);
-                foreach (var f in existingEntry.Factions) Factions.RemoveRange(f);
-                if (existingEntry.Conflicts != null)
-                {
-                    foreach (var c in existingEntry.Conflicts) Conflicts.RemoveRange(c);
-                }
-                SaveChanges();
+                if (existingEntry.Conflicts.Count > 0) Conflicts.RemoveRange(existingEntry.Conflicts);
+                existingEntry.Timestamp = json.Message.timestamp;
+                existingEntry.X = json.Message.StarPos[0];
+                existingEntry.Y = json.Message.StarPos[1];
+                existingEntry.Z = json.Message.StarPos[2];
+                system = existingEntry;
             }
 
-            List<Faction> factionList = new List<Faction>();
+            var factionList = new List<Faction>();
+            var systemFactions = existingEntry?.Factions.ToDictionary(x => x.Name) ?? [];
             foreach (EDDNDeserializer.Faction f in json.Message.Factions)
             {
-                var faction = new Faction
+                
+                if (systemFactions.TryGetValue(f.Name, out var existingF))
                 {
-                    Name = f.Name,
-                    FactionState = f.FactionState,
-                    Influence = f.Influence,
-                    SystemID = system,
-                    ActiveStates = f.ActiveStates?.Where(x => !string.IsNullOrEmpty(x.Name)).Select(x => x.Name!).ToArray() ?? Array.Empty<string>()
-                };
-                factionList.Add(faction);
-                Factions.Add(faction);
+                    existingF.FactionState = f.FactionState;
+                    existingF.Influence = f.Influence;
+                    existingF.ActiveStates = f.ActiveStates?.Where(x => !string
+                                                            .IsNullOrEmpty(x.Name))
+                                                            .Select(x => x.Name!)
+                                                            .ToArray() ?? Array.Empty<string>();
+                    existingF.PendingStates = f.PendingStates?.Where(x => !string
+                                                              .IsNullOrEmpty(x.Name))
+                                                              .Select(x => x.Name!)
+                                                              .ToArray() ?? Array.Empty<string>();
+                    existingF.Allegiance = f.Allegiance;
+                    factionList.Add(existingF);
+                }
+                else
+                {
+                    var faction = new Faction
+                    {
+                        Name = f.Name,
+                        FactionState = f.FactionState,
+                        Influence = f.Influence,
+                        System = system,
+                        Allegiance = f.Allegiance,
+                        ActiveStates = f.ActiveStates?.Where(x => !string
+                                                      .IsNullOrEmpty(x.Name))
+                                                      .Select(x => x.Name!)
+                                                      .ToArray() ?? Array.Empty<string>(),
+                        PendingStates = f.PendingStates?.Where(x => !string
+                                                        .IsNullOrEmpty(x.Name))
+                                                        .Select(x => x.Name!)
+                                                        .ToArray() ?? Array.Empty<string>()
+                    };
+                    factionList.Add(faction);
+                    Factions.Add(faction);
+                }
+                
+            }
+            if (existingEntry != null)
+            {
+                foreach (Faction f in existingEntry.Factions)
+                {
+                    if (!factionList.Contains(f)) Factions.RemoveRange(f);
+                }
             }
 
             if (json.Message.Conflicts != null)
             {
                 foreach (EDDNDeserializer.Conflict c in json.Message.Conflicts)
                 {
-                    var f1 = factionList.FirstOrDefault(x => x.Name == c.Faction1.Name);
-                    var f2 = factionList.FirstOrDefault(x => x.Name == c.Faction2.Name);
+                    var f1 = factionList.First(x => x.Name == c.Faction1.Name);
+                    var f2 = factionList.First(x => x.Name == c.Faction2.Name);
                     var conflict = new Conflict
                     {
                         Status = c.Status,
@@ -149,97 +197,118 @@ namespace BGSBot.Database
                     Conflicts.Add(conflict);
                 }
             }
-            EDSystems.Add(system);
+            if (existingEntry == null) EDSystems.Add(system);
             SaveChanges();
-            if (existingEntry == null)
-            {
-                Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss")} Added System: {system.StarSystem}");
-            }
-            else Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss")} Updated System: {system.StarSystem}");
-
-                var isActive = ActiveEDSystems.FirstOrDefault(x => x.StarSystem == system.StarSystem);
+            if (existingEntry == null) Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss")} Added System: {system.StarSystem}");
+            else Console.WriteLine($"{DateTime.Now.ToString("HH:mm:ss")} Updated System: {existingEntry.StarSystem}");
+            
+            var isActive = ActiveEDSystems.Include(x => x.Factions)
+                                          .Include(x => x.Conflicts)
+                                          .FirstOrDefault(x => x.StarSystem == json.Message.StarSystem);
             if (isActive != null)
             {
-                // do something to ping stuff
+                var guilds = Guilds.AsNoTracking().ToList().Where(x => x.Systems.Contains(isActive.StarSystem));
+                foreach (Guild guild in guilds)
+                {
+                    responder(isActive, guild, system);
+                }
                 UpdateData(system.StarSystem);
             }
         }
 
         public void TrackSystem(string faction, string system)
         {
+            List<string> systemList;
             if (system == "All Systems")
             {
-                List<string> systemList = new List<string>();
-                foreach (Faction f in Factions.Include(x => x.SystemID))
-                {
-                    if (f.Name == faction) systemList.Add(f.SystemID.StarSystem);
-                }
-                foreach (string s in systemList)
-                {
-                    UpdateData(s);
-                }
+                systemList = Factions.Where(x => x.Name == faction)
+                                     .Select(x => x.System.StarSystem)
+                                     .ToList();
             }
-            else
+            else systemList = new List<string> { system };
+            foreach (var s in systemList)
             {
-                UpdateData(system);
+                UpdateData(s);
             }
         }
 
         public void UpdateData(string system)
         {
-            var existingEntry = ActiveEDSystems.FirstOrDefault(x => x.StarSystem == system);
-            if (existingEntry != null)
+            var existingEntry = ActiveEDSystems.Include(x => x.Factions)
+                                               .Include(x => x.Conflicts)
+                                               .FirstOrDefault(x => x.StarSystem == system);
+            if (existingEntry != null && existingEntry.Conflicts.Count > 0)
             {
-                ActiveEDSystems.RemoveRange(existingEntry);
-                foreach (var f in existingEntry.Factions) ActiveFactions.RemoveRange(f);
-                if (existingEntry.Conflicts != null)
-                {
-                    foreach (var c in existingEntry.Conflicts) ActiveConflicts.RemoveRange(c);
-                }
-                SaveChanges();
+                ActiveConflicts.RemoveRange(existingEntry.Conflicts);
             }
-            var dbSystem = EDSystems.FirstOrDefault(x => x.StarSystem == system);
-            var dbFactions = new List<Faction>();
-            var dbConflicts = new List<Conflict>();
-            foreach (var f in Factions)
-            {
-                if (f.SystemID == dbSystem) dbFactions.Add(f);
-            }
-            foreach (var c in Conflicts)
-            {
-                if (c.Faction1.SystemID == dbSystem && c.Faction2.SystemID == dbSystem) dbConflicts.Add(c);
-            }
+            var dbSystem = EDSystems.Include(x => x.Factions)
+                                    .Include(x => x.Conflicts)
+                                    .First(x => x.StarSystem == system);
 
             var trackSystem = new ActiveEDSystem
             {
                 StarSystem = dbSystem.StarSystem,
-                Timestamp = dbSystem.Timestamp
+                Timestamp = dbSystem.Timestamp,
+                X = dbSystem.X,
+                Y = dbSystem.Y,
+                Z = dbSystem.Z
             };
-
-            var factionList = new List<ActiveFaction>();
-            foreach (Faction f in dbFactions)
+            if (existingEntry != null)
             {
-                var trackFaction = new ActiveFaction
-                {
-                    Name = f.Name,
-                    FactionState = f.FactionState,
-                    Influence = f.Influence,
-                    SystemID = trackSystem,
-                    ActiveStates = f.ActiveStates
-                };
-                ActiveFactions.Add(trackFaction);
-                factionList.Add(trackFaction);
+                existingEntry.Timestamp = trackSystem.Timestamp;
+                existingEntry.X = dbSystem.X;
+                existingEntry.Y = dbSystem.Y;
+                existingEntry.Z = dbSystem.Z;
             }
 
-            foreach (Conflict c in dbConflicts)
+            var existingFactions = existingEntry?.Factions.ToDictionary(f => f.Name) ?? new Dictionary<string, ActiveFaction>();
+            var factionList = new List<ActiveFaction>();
+            
+            foreach (Faction f in dbSystem.Factions)
             {
-                var f1 = factionList.FirstOrDefault(x => x.Name == c.Faction1.Name);
-                var f2 = factionList.FirstOrDefault(x => x.Name == c.Faction2.Name);
+                if (existingFactions.TryGetValue(f.Name, out var existingF))
+                {
+                    existingF.FactionState = f.FactionState;
+                    existingF.Influence = f.Influence;
+                    existingF.ActiveStates = f.ActiveStates;
+                    existingF.PendingStates = f.PendingStates;
+                    existingF.Allegiance = f.Allegiance;
+                    factionList.Add(existingF);
+                }
+                else
+                {
+                    var trackFaction = new ActiveFaction
+                    {
+                        Name = f.Name,
+                        FactionState = f.FactionState,
+                        Influence = f.Influence,
+                        System = trackSystem,
+                        ActiveStates = f.ActiveStates,
+                        PendingStates = f.PendingStates,
+                        Timestamp = trackSystem.Timestamp,
+                        Allegiance = f.Allegiance
+                    };
+                    ActiveFactions.Add(trackFaction);
+                    factionList.Add(trackFaction);
+                }
+            }    
+            if (existingEntry != null)
+            {
+                foreach (ActiveFaction f in existingEntry.Factions)
+                {
+                    if (!factionList.Contains(f)) ActiveFactions.RemoveRange(f);
+                }
+            }
+
+            foreach (Conflict c in dbSystem.Conflicts)
+            {
+                var f1 = factionList.First(x => x.Name == c.Faction1.Name);
+                var f2 = factionList.First(x => x.Name == c.Faction2.Name);
                 var conflict = new ActiveConflict
                 {
                     Status = c.Status,
                     WarType = c.WarType,
-                    SystemID = trackSystem,
+                    SystemID = existingEntry ?? trackSystem,
                     Faction1 = f1,
                     Faction2 = f2,
                     F1Stake = c.F1Stake,
@@ -249,58 +318,44 @@ namespace BGSBot.Database
                 };
                 ActiveConflicts.Add(conflict);
             }
-            ActiveEDSystems.Add(trackSystem);
+            if (existingEntry == null) ActiveEDSystems.Add(trackSystem);
             SaveChanges();
         }
 
         public void AddGuild(string GuildID, string faction, string system, string roleID, string channelID)
         {
-            var systemList = new List<string>();
-            var existingList = Guilds.Where(x => x.GuildID == GuildID);
-            var existing = existingList.FirstOrDefault(x => x.Faction == faction);
-            if (existing != null)
-            {
-                systemList = existing.Systems.ToList();
-                if (system == "All Systems")
-                {
-                    foreach (ActiveFaction f in ActiveFactions.Include(x => x.SystemID))
-                    {
-                        if (f.Name == faction)
-                        {
-                            systemList.Add(f.SystemID.StarSystem);
-                        }
-                    }
-                }
-                else systemList.Add(system);
-                var systemArray = systemList.ToArray();
-                var updatedGuild = existing;
-                updatedGuild.Systems = systemArray;
-                Entry(existing).CurrentValues.SetValues(updatedGuild);
-                SaveChanges();
-                return;
-            }
-            
+            TrackSystem(faction, system);
+            var existing = Guilds.FirstOrDefault(x => x.GuildID == GuildID && x.Faction == faction);
+            HashSet<string> systemList = existing != null ? existing.Systems.ToHashSet() : new HashSet<string>();
+
             if (system == "All Systems")
             {
-                foreach (ActiveFaction f in ActiveFactions.Include(x => x.SystemID))
-                {
-                    if (f.Name == faction) 
-                    {
-                        systemList.Add(f.SystemID.StarSystem);
-                    }
-                }
+                var activeSystems = ActiveFactions.Where(f => f.Name == faction).Select(f => f.System.StarSystem);
+                foreach (var s in activeSystems) systemList.Add(s);
             }
-            else systemList.Add(system);
-            var systemArray2 = systemList.ToArray();
-            var guild2 = new Guild
+            else
             {
-                GuildID = GuildID,
-                RoleID = roleID,
-                TextChannelID = channelID,
-                Faction = faction,
-                Systems = systemArray2
-            };
-            Guilds.Add(guild2);
+                systemList.Add(system);
+            }
+
+            if (existing != null)
+            {
+                existing.RoleID = roleID;
+                existing.TextChannelID = channelID;
+                existing.Systems = systemList.ToArray();
+            }
+            else
+            {
+                var guild = new Guild
+                { 
+                    GuildID = GuildID,
+                    RoleID = roleID,
+                    TextChannelID = channelID,
+                    Faction = faction,
+                    Systems = systemList.ToArray()
+                };
+                Guilds.Add(guild);
+            }
             SaveChanges();
         }
     }

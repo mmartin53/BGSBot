@@ -36,7 +36,7 @@ namespace BGSBot.Services
             public double PowerplayStateReinforcement { get; set; }
             public double PowerplayStateUndermining { get; set; }
             public string[]? Powers { get; set; }
-            public double[]? StarPos { get; set; }
+            public required double[] StarPos { get; set; }
             public required string StarSystem { get; set; }
             public long SystemAddress { get; set; }
             public string? SystemAllegiance { get; set; }
@@ -70,7 +70,7 @@ namespace BGSBot.Services
         public class Faction
         {
             public State[]? ActiveStates { get; set; }
-            public string? Allegiance { get; set; }
+            public required string Allegiance { get; set; }
             public required string FactionState { get; set; }
             public string? Government { get; set; }
             public string? Happiness { get; set; }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BGSBot")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d210afd2c249ef2f1b2b8c1d16c67900af64c323")]
 [assembly: System.Reflection.AssemblyProductAttribute("BGSBot")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BGSBot")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

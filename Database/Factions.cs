@@ -1,4 +1,4 @@
-﻿using BGSBot.Database;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -24,20 +24,31 @@ namespace BGSBot.Database
         public string[]? ActiveStates { get; set; }
 
         [Column("SystemID")]
-        public ulong? JournalMessageID { get; set; }
+        public ulong SystemFK { get; set; }
+
+        [Column("PendingStates")]
+        public string[]? PendingStates { get; set; }
+
+        [Column("Allegiance")]
+        public string? Allegiance { get; set; }
     }
 
     [Table("Factions")]
+    [Index(nameof(Name), nameof(SystemFK))]
     public class Faction : FactionBase
     {
-        [ForeignKey(nameof(JournalMessageID))]
-        public required EDSystem SystemID { get; set; }
+        [ForeignKey(nameof(SystemFK))]
+        public required EDSystem System { get; set; }
     }
 
     [Table("ActiveFactions")]
+    [Index(nameof(Name), nameof(SystemFK))]
     public class ActiveFaction : FactionBase
     {
-        [ForeignKey(nameof(JournalMessageID))]
-        public required ActiveEDSystem SystemID { get; set; }
+        [ForeignKey(nameof(SystemFK))]
+        public required ActiveEDSystem System { get; set; }
+
+        [Column("LastChecked")]
+        public DateTime Timestamp { get; set; }
     }
 }

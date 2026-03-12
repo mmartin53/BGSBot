@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BGSBot.Database
@@ -39,6 +40,7 @@ namespace BGSBot.Database
     }
 
     [Table("Conflicts")]
+    [Index(nameof(JournalMessageID))]
     public class Conflict : ConflictBase
     {
         [ForeignKey(nameof(JournalMessageID))]
@@ -52,6 +54,7 @@ namespace BGSBot.Database
     }
 
     [Table("ActiveConflicts")]
+    [Index(nameof(JournalMessageID))]
     public class ActiveConflict : ConflictBase
     {
         [ForeignKey(nameof(JournalMessageID))]
