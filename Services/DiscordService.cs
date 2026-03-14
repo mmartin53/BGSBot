@@ -421,6 +421,7 @@ namespace BGSBot.Services
                 embed.AddField("Type", $"{conflictStates[newFaction.FactionState]}");
                 embed.AddField("Stakes", $"Your stake: {(isfaction1 ? fa1Stake : fa2Stake)}\n" +
                                          $"Enemy stake: {(isfaction1 ? fa2Stake : fa1Stake)}");
+                embed.AddField("Current Influence", $"{newFaction.Influence:P}");
             }
 
             if (oldIsConflict && !newIsConflict) // conflict has ended
@@ -428,7 +429,12 @@ namespace BGSBot.Services
                 var conflict = oldSystem.Conflicts.First(x => x.Faction1.Name == oldFaction.Name || x.Faction2.Name == oldFaction.Name);
                 bool isfaction1 = conflict.Faction1.Name == oldFaction.Name;
                 var oppFaction = isfaction1 ? conflict.Faction2 : conflict.Faction1;
-                bool weWon = (newFaction.Influence > oldFaction.Influence);
+                bool weWon = false;
+                if (conflict.F1WonDays == 3 && conflict.F2WonDays == 3)
+                {
+                    weWon = (newFaction.Influence > oldFaction.Influence);
+                }
+                else weWon = isfaction1 ? (conflict.F1WonDays == 3) : (conflict.F2WonDays == 3);
                 string capturedStake = weWon ? (isfaction1 ? conflict.F2Stake : conflict.F1Stake) : (isfaction1 ? conflict.F1Stake : conflict.F2Stake);
                 if (string.IsNullOrEmpty(capturedStake)) capturedStake = "nothing";
                 embed.WithColor(weWon ? Color.Green : Color.Red);
@@ -436,6 +442,7 @@ namespace BGSBot.Services
                 embed.AddField("Victor", weWon ? newFaction.Name : oppFaction.Name);
                 embed.AddField("Result", capturedStake == "nothing" ? $"No assets changed hands" 
                                                                     : $"{(weWon ? newFaction.Name : oppFaction.Name)} has taken control of {capturedStake}");
+                embed.AddField("Current Influence", $"{newFaction.Influence:P}");
             }
             return embed.Build();
         }
@@ -471,6 +478,7 @@ namespace BGSBot.Services
                                           .WithColor(Color.Blue)
                                           .AddField("Faction", newFaction.Name)
                                           .AddField("New State", stateString)
+                                          .AddField("Current Influence", $"{newFaction.Influence:P}")
                                           .WithCurrentTimestamp();
             return embed.Build();
         }
@@ -481,7 +489,7 @@ namespace BGSBot.Services
             {
                 return null;
             }
-            var oldPending = oldFaction.PendingStates ?? Array.Empty<string>();
+            var oldPending = oldFaction.PendingStates ?? [];
             var newPending = newFaction.PendingStates;
             bool stateChange = newPending.Any(x => !oldPending.Contains(x));
             if (!stateChange) return null;
@@ -497,6 +505,7 @@ namespace BGSBot.Services
                                           .WithColor(Color.Blue)
                                           .AddField("Faction", newFaction.Name)
                                           .AddField("Upcoming States", string.Join(", ", newStates))
+                                          .AddField("Current Influence", $"{newFaction.Influence:P}")
                                           .WithCurrentTimestamp();
             return embed.Build();
         }
