@@ -4,34 +4,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace BGSBot.Modules
 {
-    public enum FactionState
-    {
-        [ChoiceDisplay("Blight")] Blight,
-        [ChoiceDisplay("Boom")] Boom,
-        [ChoiceDisplay("Bust")] Bust,
-        [ChoiceDisplay("Civil Liberty")] CivilLiberty,
-        [ChoiceDisplay("Civil Unrest")] CivilUnrest,
-        [ChoiceDisplay("Civil War")] CivilWar,
-        [ChoiceDisplay("Drought")] Drought,
-        [ChoiceDisplay("Election")] Election,
-        [ChoiceDisplay("Expansion")] Expansion,
-        [ChoiceDisplay("Famine")] Famine,
-        [ChoiceDisplay("Infrastructure Failure")] InfrastructureFailure,
-        [ChoiceDisplay("Investment")] Investment,
-        [ChoiceDisplay("Lockdown")] Lockdown,
-        [ChoiceDisplay("Natural Disaster")] NaturalDisaster,
-        [ChoiceDisplay("Outbreak")] Outbreak,
-        [ChoiceDisplay("Pirate Attack")] PirateAttack,
-        [ChoiceDisplay("Public Holiday")] PublicHoliday,
-        [ChoiceDisplay("Retreat")] Retreat,
-        [ChoiceDisplay("Terrorist Attack")] Terrorism,
-        [ChoiceDisplay("War")] War
-    }
-
     public class Commands : InteractionModuleBase
     {
         public required DatabaseService DatabaseService { get; set; }
@@ -110,59 +85,6 @@ namespace BGSBot.Modules
                 components: builder.Build(),
                 ephemeral: true
             );
-        }
-
-        [SlashCommand("neareststate","Finds the closest system in a specific state")]
-        public async Task SeachNearestStateAsync([Autocomplete(typeof(SystemAutoComplete))] string system, FactionState state)
-        {
-            using var db = DatabaseService.NewDatabaseContext();
-            var dbSystem = db.EDSystems.AsNoTracking().First(x => x.StarSystem == system);
-            var stateString = $"\"{state}\"";
-            var factions = db.Factions.AsNoTracking()
-                                      .Include(x => x.System)
-                                      .ToList()
-                                      .Where(x => x.ActiveStates != null && x.ActiveStates.Contains(state.ToString()))
-                                      .ToList();
-            if (factions.Count == 0)
-            {
-                await RespondAsync("No such system available", ephemeral: true);
-                return;
-            }
-            var sortedFactions = factions.DistinctBy(x => x.System.StarSystem).OrderBy(x => Distance(dbSystem, x.System)).Take(5).ToList();
-            var embedBuilder = new EmbedBuilder().WithTitle($"Closest systems in {GetChoiceDisplayName(state)}")
-                                                 .WithDescription($"Reference system: **{dbSystem.StarSystem}**")
-                                                 .WithColor(Color.Blue);
-
-            foreach (var faction in sortedFactions)
-            {
-                embedBuilder.AddField(
-                    faction.System.StarSystem,
-                    $"Distance: {Distance(dbSystem, faction.System):F1} Ly\nFaction: {faction.Name}",
-                    inline: false);
-            }
-
-            await RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
-        }
-
-        private static double Distance(EDSystem a, EDSystem b)
-        {
-            var dx = a.X - b.X;
-            var dy = a.Y - b.Y;
-            var dz = a.Z - b.Z;
-            return Math.Sqrt(dx * dx + dy * dy + dz * dz);
-        }
-
-        public static string GetChoiceDisplayName(FactionState state)
-        {
-            var type = typeof(FactionState);
-            var memInfo = type.GetMember(state.ToString());
-            if (memInfo.Length > 0)
-            {
-                var attr = memInfo[0].GetCustomAttribute<ChoiceDisplayAttribute>();
-                if (attr != null)
-                    return attr.Name;
-            }
-            return state.ToString(); // fallback
         }
     }
 }

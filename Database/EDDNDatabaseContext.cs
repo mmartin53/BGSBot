@@ -101,7 +101,7 @@ namespace BGSBot.Database
                                                  .OnDelete(DeleteBehavior.Restrict);
         }
 
-        public void AddSystem(EDDNDeserializer.Root json, Action<ActiveEDSystem, Guild, EDSystem> responder)
+        public async Task AddSystem(EDDNDeserializer.Root json, Func<ActiveEDSystem, Guild, EDSystem, Task> responderAsync)
         {
             var system = new EDSystem
             {
@@ -210,7 +210,7 @@ namespace BGSBot.Database
                 var guilds = Guilds.AsNoTracking().ToList().Where(x => x.Systems.Contains(isActive.StarSystem));
                 foreach (Guild guild in guilds)
                 {
-                    responder(isActive, guild, system);
+                    await responderAsync(isActive, guild, system);
                 }
                 UpdateData(system.StarSystem);
             }
@@ -261,7 +261,7 @@ namespace BGSBot.Database
                 existingEntry.Z = dbSystem.Z;
             }
 
-            var existingFactions = existingEntry?.Factions.ToDictionary(f => f.Name) ?? new Dictionary<string, ActiveFaction>();
+            var existingFactions = existingEntry?.Factions.ToDictionary(f => f.Name) ?? [];
             var factionList = new List<ActiveFaction>();
             
             foreach (Faction f in dbSystem.Factions)
@@ -326,7 +326,7 @@ namespace BGSBot.Database
         {
             TrackSystem(faction, system);
             var existing = Guilds.FirstOrDefault(x => x.GuildID == GuildID && x.Faction == faction);
-            HashSet<string> systemList = existing != null ? existing.Systems.ToHashSet() : new HashSet<string>();
+            HashSet<string> systemList = existing != null ? existing.Systems.ToHashSet() : [];
 
             if (system == "All Systems")
             {

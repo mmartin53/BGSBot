@@ -20,6 +20,35 @@ namespace BGSBot.Services
         private readonly InteractionService _interactionService;
         private readonly EDDNDeserializer _EDDND;
         private readonly DatabaseService _database;
+        private static readonly Dictionary<string, string> stateNames = new()
+        {
+            { "Blight", "Blight" },
+            { "Boom", "Boom" },
+            { "Bust", "Bust" },
+            { "CivilLiberty", "Civil liberty" },
+            { "CivilUnrest", "Civil unrest" },
+            { "CivilWar", "Civil war" },
+            { "Drought", "Drought" },
+            { "Election", "Election" },
+            { "Expansion", "Expansion" },
+            { "Famine", "Famine" },
+            { "InfrastructureFailure", "Infrastructure failure" },
+            { "Investment", "Investment" },
+            { "Lockdown", "Lockdown" },
+            { "NaturalDisaster", "Natural disaster" },
+            { "Outbreak", "Outbreak" },
+            { "PirateAttack", "Pirate attack" },
+            { "PublicHoliday", "Public holiday" },
+            { "Retreat", "Retreat" },
+            { "Terrorism", "Terrorist attack" },
+            { "War", "War" }
+        };
+        private static readonly Dictionary<string, string> conflictStates = new()
+        {
+            { "War", "War" },
+            { "Election", "Election" },
+            { "CivilWar", "Civil war" },
+        };
 
         public DiscordService(IServiceProvider services)
         {
@@ -69,12 +98,13 @@ namespace BGSBot.Services
                                     var result = utf8.GetString(uncompressed);
                                     if (result.Contains("https://eddn.edcd.io/schemas/journal/1")
                                     && (result.Contains("\"event\": \"FSDJump\"")
-                                     || result.Contains("\"event\": \"CarrierJump\""))
+                                     || result.Contains("\"event\": \"CarrierJump\"")
+                                     || result.Contains("\"event\": \"Location\""))
                                      && result.Contains("Factions"))
                                     {
                                         var JSON = _EDDND.Deserializer(result);
                                         using var db = _database.NewDatabaseContext();
-                                        if (JSON != null) db.AddSystem(JSON, BGSResponder);
+                                        if (JSON != null) await db.AddSystem(JSON, BGSResponder);
                                     }
                                 }
                                 else break;
@@ -321,153 +351,156 @@ namespace BGSBot.Services
             });
         }
 
-        public void BGSResponder(ActiveEDSystem oldSystem, Guild dbGuild, EDSystem newSystem)
+        public async Task BGSResponder(ActiveEDSystem oldSystem, Guild dbGuild, EDSystem newSystem)
         {
-            Task.Run(async() =>
+            var oldFaction = oldSystem.Factions.First(x => x.Name == dbGuild.Faction);
+            var newFaction = newSystem.Factions.First(x => x.Name == dbGuild.Faction);
+
+            var guild = _discord.GetGuild(Convert.ToUInt64(dbGuild.GuildID));
+            var textchannel = guild?.GetTextChannel(Convert.ToUInt64(dbGuild.TextChannelID));
+            if (textchannel == null)  return;
+
+            var embeds = new List<Embed>();
+
+            var conflictEmbed = BuildConflictEmbed(oldSystem, newSystem, oldFaction, newFaction);
+            if (conflictEmbed != null) embeds.Add(conflictEmbed);
+            var influenceEmbed = BuildInfluenceEmbed(oldFaction, newFaction, newSystem);
+            if (influenceEmbed != null) embeds.Add(influenceEmbed);
+            var stateEmbed = BuildStateChangeEmbed(oldFaction, newFaction, newSystem);
+            if (stateEmbed != null) embeds.Add(stateEmbed);
+            var pendingEmbed = BuildPendingStateEmbed(oldFaction, newFaction, newSystem);
+            if (pendingEmbed != null) embeds.Add(pendingEmbed);
+
+            string? ping = dbGuild.RoleID != "No role" ? $"<@&{dbGuild.RoleID}>" : null;
+            if (embeds.Count > 0 && ping != null) await textchannel.SendMessageAsync(ping);
+            foreach (var e in embeds) await textchannel.SendMessageAsync(embed: e);
+        }
+
+        private Embed? BuildConflictEmbed(ActiveEDSystem oldSystem, EDSystem newSystem,
+                                          ActiveFaction oldFaction, Faction newFaction)
+        {
+            
+            bool oldIsConflict = conflictStates.ContainsKey(oldFaction.FactionState);
+            bool newIsConflict = conflictStates.ContainsKey(newFaction.FactionState);
+            if (!oldIsConflict && !newIsConflict) return null;
+
+            var embed = new EmbedBuilder().WithTitle($"Conflict Update - {newSystem.StarSystem}")
+                                          .WithCurrentTimestamp();
+
+            if (oldIsConflict && newIsConflict) // conflict ongoing
             {
-                var conflictStates = new Dictionary<string, string>
-                {
-                    { "War", "War" },
-                    { "Election", "Election" },
-                    { "CivilWar", "Civil war" },
-                };
-                var stateNames = new Dictionary<string, string>
-                {
-                    { "Blight", "Blight" },
-                    { "Boom", "Boom" },
-                    { "Bust", "Bust" },
-                    { "CivilLiberty", "Civil liberty" },
-                    { "CivilUnrest", "Civil unrest" },
-                    { "CivilWar", "Civil war" },
-                    { "Drought", "Drought" },
-                    { "Election", "Election" },
-                    { "Expansion", "Expansion" },
-                    { "Famine", "Famine" },
-                    { "InfrastructureFailure", "Infrastructure failure" },
-                    { "Investment", "Investment" },
-                    { "Lockdown", "Lockdown" },
-                    { "NaturalDisaster", "Natural disaster" },
-                    { "Outbreak", "Outbreak" },
-                    { "PirateAttack", "Pirate attack" },
-                    { "PublicHoliday", "Public holiday" },
-                    { "Retreat", "Retreat" },
-                    { "Terrorism", "Terrorist attack" },
-                    { "War", "War" },
-                };
-                var oldFaction = oldSystem.Factions.First(x => x.Name == dbGuild.Faction);
-                var newFaction = newSystem.Factions.First(x => x.Name == dbGuild.Faction);
-                bool oldIsConflict = conflictStates.ContainsKey(oldFaction.FactionState);
-                bool newIsConflict = conflictStates.ContainsKey(newFaction.FactionState);
-                string output = "";
-                if (dbGuild.RoleID != "No role") output = $"<@&{dbGuild.RoleID}>";
-                if (oldIsConflict || newIsConflict)
-                {
-                    if (oldIsConflict && newIsConflict) // conflict ongoing
-                    {
-                        var oldConflict = oldSystem.Conflicts.First(x => x.Faction1.Name == oldFaction.Name || x.Faction2.Name == oldFaction.Name);
-                        var newConflict = newSystem.Conflicts.First(x => x.Faction1.Name == newFaction.Name || x.Faction2.Name == newFaction.Name);
-                        if (oldConflict.F1WonDays == newConflict.F1WonDays && oldConflict.F2WonDays == newConflict.F2WonDays) goto Next;
+                var oldConflict = oldSystem.Conflicts.First(x => x.Faction1.Name == oldFaction.Name || x.Faction2.Name == oldFaction.Name);
+                var newConflict = newSystem.Conflicts.First(x => x.Faction1.Name == newFaction.Name || x.Faction2.Name == newFaction.Name);
+                if (oldConflict.F1WonDays == newConflict.F1WonDays && oldConflict.F2WonDays == newConflict.F2WonDays) return null;
 
-                        bool isfaction1 = false;
-                        if (oldConflict.Faction1.Name == oldFaction.Name) isfaction1 = true;
-                        var oppFaction = isfaction1 ? newConflict.Faction2 : newConflict.Faction1;
-                        var oldAllyWonDays = isfaction1 ? oldConflict.F1WonDays : oldConflict.F2WonDays;
-                        var newAllyWonDays = isfaction1 ? newConflict.F1WonDays : newConflict.F2WonDays;
-                        var newOppWonDays = isfaction1 ? newConflict.F2WonDays : newConflict.F1WonDays;
-                        bool weWon = (newAllyWonDays > oldAllyWonDays);
+                bool isfaction1 = newConflict.Faction1.Name == newFaction.Name;
+                var oppFaction = isfaction1 ? newConflict.Faction2 : newConflict.Faction1;
+                var oldAllyWonDays = isfaction1 ? oldConflict.F1WonDays : oldConflict.F2WonDays;
+                var newAllyWonDays = isfaction1 ? newConflict.F1WonDays : newConflict.F2WonDays;
+                var newOppWonDays = isfaction1 ? newConflict.F2WonDays : newConflict.F1WonDays;
+                bool weWon = (newAllyWonDays > oldAllyWonDays);
 
-                        output += $"\nDay {newAllyWonDays + newOppWonDays}/7 of {conflictStates[newFaction.FactionState].ToLower()} in {newConflict.SystemID.StarSystem}:\n";
-                        if (weWon) output += $"{newFaction.Name} has won the day. The score is now {newAllyWonDays}:{newOppWonDays}";
-                        if (!weWon) output += $"{oppFaction.Name} has won the day. The score is now {newAllyWonDays}:{newOppWonDays}";
-                    }
+                embed.WithColor(Color.Blue);
+                embed.AddField("Conflict", $"{conflictStates[newFaction.FactionState]} vs {oppFaction.Name}");
+                embed.AddField("Progress", $"Day {newAllyWonDays + newOppWonDays} of 7");
+                embed.AddField("Score", $"{newAllyWonDays}:{newOppWonDays}");
+                embed.AddField("Today's Result", $"{(weWon ? newFaction.Name : oppFaction.Name)} has won the day.");
+            }
 
-                    if (!oldIsConflict && newIsConflict) // conflict has started
-                    {
-                        var conflict = newSystem.Conflicts.First(x => x.Faction1.Name == newFaction.Name || x.Faction2.Name == newFaction.Name);
-                        bool isfaction1 = false;
-                        if (conflict.Faction1.Name == newFaction.Name) isfaction1 = true;
-                        var oppFaction = isfaction1 ? conflict.Faction2 : conflict.Faction1;
-                        string fa1Stake = conflict.F1Stake, fa2Stake = conflict.F2Stake;
-                        if (fa1Stake == "") fa1Stake = "nothing";
-                        if (fa2Stake == "") fa2Stake = "nothing";
+            if (!oldIsConflict && newIsConflict) // conflict has started
+            {
+                var conflict = newSystem.Conflicts.First(x => x.Faction1.Name == newFaction.Name || x.Faction2.Name == newFaction.Name);
+                bool isfaction1 = conflict.Faction1.Name == newFaction.Name;
+                var oppFaction = isfaction1 ? conflict.Faction2 : conflict.Faction1;
+                string fa1Stake = conflict.F1Stake, fa2Stake = conflict.F2Stake;
+                if (string.IsNullOrEmpty(fa1Stake)) fa1Stake = "nothing";
+                if (string.IsNullOrEmpty(fa2Stake)) fa2Stake = "nothing";
 
-                        output += $"\n{conflictStates[newFaction.FactionState]} has begun between {newFaction.Name} and {oppFaction.Name} in {conflict.SystemID.StarSystem}." +
-                                  $"\nYour Faction is staking {(isfaction1 ? fa1Stake : fa2Stake)} " + 
-                                  $"while the enemy is staking {(isfaction1 ? fa2Stake : fa1Stake)}";
-                    }
+                embed.WithColor(Color.Blue);
+                embed.AddField("Conflict Started", $"{newFaction.Name} vs {oppFaction.Name}");
+                embed.AddField("Type", $"{conflictStates[newFaction.FactionState]}");
+                embed.AddField("Stakes", $"Your stake: {(isfaction1 ? fa1Stake : fa2Stake)}\n" +
+                                         $"Enemy stake: {(isfaction1 ? fa2Stake : fa1Stake)}");
+            }
 
-                    if (oldIsConflict && !newIsConflict) // conflict has ended
-                    {
-                        var conflict = oldSystem.Conflicts.First(x => x.Faction1.Name == oldFaction.Name || x.Faction2.Name == oldFaction.Name);
-                        bool isfaction1 = false;
-                        if (conflict.Faction1.Name == oldFaction.Name) isfaction1 = true;
-                        var oppFaction = isfaction1 ? conflict.Faction2 : conflict.Faction1;
-                        var allyWonDays = isfaction1 ? conflict.F1WonDays : conflict.F2WonDays;
-                        var oppWonDays = isfaction1 ? conflict.F2WonDays : conflict.F1WonDays;
-                        string fa1Stake = conflict.F1Stake, fa2Stake = conflict.F2Stake;
-                        if (fa1Stake == "") fa1Stake = "nothing";
-                        if (fa2Stake == "") fa2Stake = "nothing";
-                        bool weWon = (newFaction.Influence > oldFaction.Influence);
-                        output += $"\nThe {conflictStates[oldFaction.FactionState].ToLower()} has ended in {conflict.SystemID.StarSystem}.\n";
-                        if (weWon)
-                        {
-                            var stake = isfaction1 ? fa2Stake : fa1Stake;
-                            if (stake == "nothing")
-                            {
-                                output += $"{oldFaction.Name} has achieved victory over {oppFaction.Name}";
-                            }
-                            else output += $"{oldFaction.Name} has achieved victory over {oppFaction.Name} and has taken control of {stake}.";
-                        }
-                        else
-                        {
-                            var stake = isfaction1 ? fa1Stake : fa2Stake;
-                            if (stake == "nothing")
-                            {
-                                output += $"{oppFaction.Name} has achieved victory over {oldFaction.Name}";
-                            }
-                            else output += $"{oppFaction.Name} has achieved victory over {oldFaction.Name} and has taken control of {(isfaction1 ? conflict.F1Stake : conflict.F2Stake)}.";
-                        }
-                    }
-                }
+            if (oldIsConflict && !newIsConflict) // conflict has ended
+            {
+                var conflict = oldSystem.Conflicts.First(x => x.Faction1.Name == oldFaction.Name || x.Faction2.Name == oldFaction.Name);
+                bool isfaction1 = conflict.Faction1.Name == oldFaction.Name;
+                var oppFaction = isfaction1 ? conflict.Faction2 : conflict.Faction1;
+                string ourStake = isfaction1 ? conflict.F1Stake : conflict.F2Stake;
+                string theirStake = isfaction1 ? conflict.F2Stake : conflict.F1Stake;
+                bool weWon = (newFaction.Influence > oldFaction.Influence);
+                string capturedStake = weWon ? theirStake : ourStake;
+                if (!string.IsNullOrEmpty(capturedStake)) capturedStake = "nothing";
+                embed.WithColor(weWon ? Color.Green : Color.Red);
+                embed.AddField("Conflict Ended", $"The {conflictStates[oldFaction.FactionState].ToLower()} in {newSystem.StarSystem} has concluded.");
+                embed.AddField("Victor", weWon ? newFaction.Name : oppFaction.Name);
+                embed.AddField("Result", capturedStake == "nothing" ? $"No assets changed hands" 
+                                                                    : $"{(weWon ? newFaction.Name : oppFaction.Name)} has taken control of {capturedStake}");
+            }
+            return embed.Build();
+        }
 
-                Next:
-                if (newFaction.Influence < 0.1 && (newSystem.Timestamp - oldFaction.Timestamp).TotalDays > 1 && !newIsConflict) // low influence ping, 1/day
-                {
-                    using var db = _database.NewDatabaseContext();
-                    var faction = db.ActiveFactions.First(x => x.Name == newFaction.Name && x.System.StarSystem == newSystem.StarSystem);
-                    faction.Timestamp = newSystem.Timestamp;
-                    db.SaveChanges();
-                    output += $"\n{newFaction.Name}'s influence is getting low in {newSystem.StarSystem}. Curently at: {newFaction.Influence:P}";
-                }
+        private Embed? BuildInfluenceEmbed(ActiveFaction oldFaction, Faction newFaction, EDSystem system) // low influence ping, 1/day
+        {
+            if (newFaction.Influence > 0.1 
+            || (system.Timestamp - oldFaction.Timestamp).TotalDays < 1
+            ||  conflictStates.ContainsKey(newFaction.FactionState)) 
+            {
+                return null;
+            }
 
-                if (oldFaction.FactionState != newFaction.FactionState && !newIsConflict) // General state change message
-                {
-                    var stateString = stateNames.ContainsKey(newFaction.FactionState) ?
-                                      stateNames[newFaction.FactionState] : newFaction.FactionState;
-                    output += $"\n{newFaction.Name} has entered into a new state in {newSystem.StarSystem}.\nNew state is: {stateString}";
-                }
+            using var db = _database.NewDatabaseContext();
+            var faction = db.ActiveFactions.First(x => x.Name == newFaction.Name && x.System.StarSystem == system.StarSystem);
+            faction.Timestamp = system.Timestamp;
+            db.SaveChanges();
 
-                if (newFaction.PendingStates != null && newFaction.PendingStates.Length > 0) // pending states
-                {
-                    var oldPending = oldFaction.PendingStates ?? Array.Empty<string>();
-                    var newPending = newFaction.PendingStates ?? Array.Empty<string>();
-                    bool stateChange = newPending.Any(s => !oldPending.Contains(s));
+            var embed = new EmbedBuilder().WithTitle($"Influence Warning - {system.StarSystem}")
+                                          .WithColor(Color.Red)
+                                          .AddField("Faction", newFaction.Name)
+                                          .AddField("Current Influence", $"{newFaction.Influence:P}")
+                                          .WithCurrentTimestamp();
+            return embed.Build();
+        }
 
-                    if (stateChange)
-                    {
-                        output += $"\nA new state is pending in {newSystem.StarSystem}: ";
-                        foreach (string s in newPending) 
-                        {
-                            var stateString = stateNames.ContainsKey(s) ? stateNames[s] : s;
-                            output += $"{stateString} ";
-                        }
-                    }
-                }
-                
-                var textchannel = _discord.GetGuild(Convert.ToUInt64(dbGuild.GuildID))
-                                          .GetTextChannel(Convert.ToUInt64(dbGuild.TextChannelID));
-                if (output != $"<@&{dbGuild.RoleID}>" && output != "") await textchannel.SendMessageAsync(output);
-            });
+        private Embed? BuildStateChangeEmbed(ActiveFaction oldFaction, Faction newFaction, EDSystem system)
+        {
+            if (oldFaction.FactionState == newFaction.FactionState) return null;
+            var stateString = stateNames.ContainsKey(newFaction.FactionState) ?
+                                         stateNames[newFaction.FactionState] : newFaction.FactionState;
+            var embed = new EmbedBuilder().WithTitle($"State Change - {system.StarSystem}")
+                                          .WithColor(Color.Blue)
+                                          .AddField("Faction", newFaction.Name)
+                                          .AddField("New State", stateString)
+                                          .WithCurrentTimestamp();
+            return embed.Build();
+        }
+
+        private Embed? BuildPendingStateEmbed(ActiveFaction oldFaction, Faction newFaction, EDSystem system)
+        {
+            if (newFaction.PendingStates == null || newFaction.PendingStates.Length == 0) // pending states
+            {
+                return null;
+            }
+            var oldPending = oldFaction.PendingStates ?? Array.Empty<string>();
+            var newPending = newFaction.PendingStates;
+            bool stateChange = newPending.Any(x => !oldPending.Contains(x));
+            if (!stateChange) return null;
+
+            var newStates = new List<string>();
+            foreach (string s in newPending)
+            {
+                var stateString = stateNames.ContainsKey(s) ? stateNames[s] : s;
+                newStates.Add(stateString);
+            }
+
+            var embed = new EmbedBuilder().WithTitle($"Pending State - {system.StarSystem}")
+                                          .WithColor(Color.Blue)
+                                          .AddField("Faction", newFaction.Name)
+                                          .AddField("Upcoming States", string.Join(", ", newStates))
+                                          .WithCurrentTimestamp();
+            return embed.Build();
         }
     }
 }
