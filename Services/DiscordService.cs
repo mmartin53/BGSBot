@@ -428,11 +428,9 @@ namespace BGSBot.Services
                 var conflict = oldSystem.Conflicts.First(x => x.Faction1.Name == oldFaction.Name || x.Faction2.Name == oldFaction.Name);
                 bool isfaction1 = conflict.Faction1.Name == oldFaction.Name;
                 var oppFaction = isfaction1 ? conflict.Faction2 : conflict.Faction1;
-                string ourStake = isfaction1 ? conflict.F1Stake : conflict.F2Stake;
-                string theirStake = isfaction1 ? conflict.F2Stake : conflict.F1Stake;
                 bool weWon = (newFaction.Influence > oldFaction.Influence);
-                string capturedStake = weWon ? theirStake : ourStake;
-                if (!string.IsNullOrEmpty(capturedStake)) capturedStake = "nothing";
+                string capturedStake = weWon ? (isfaction1 ? conflict.F2Stake : conflict.F1Stake) : (isfaction1 ? conflict.F1Stake : conflict.F2Stake);
+                if (string.IsNullOrEmpty(capturedStake)) capturedStake = "nothing";
                 embed.WithColor(weWon ? Color.Green : Color.Red);
                 embed.AddField("Conflict Ended", $"The {conflictStates[oldFaction.FactionState].ToLower()} in {newSystem.StarSystem} has concluded.");
                 embed.AddField("Victor", weWon ? newFaction.Name : oppFaction.Name);
